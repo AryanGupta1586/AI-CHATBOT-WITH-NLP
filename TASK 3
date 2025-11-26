@@ -1,0 +1,72 @@
+import nltk
+import random
+import string
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
+
+# Download required NLTK data
+nltk.download('punkt')
+nltk.download('wordnet')
+
+# Sample knowledge base text
+chat_corpus = """
+Hello! I am your AI chatbot.
+I can help answer your questions.
+You can ask me about Python, programming, or general topics.
+Python is a programming language.
+Natural Language Processing is a field of AI.
+How can I help you?
+Goodbye!
+"""
+
+# Preprocessing
+sent_tokens = nltk.sent_tokenize(chat_corpus)
+lemmer = nltk.stem.WordNetLemmatizer()
+
+def LemTokens(tokens):
+    return [lemmer.lemmatize(token.lower()) for token in tokens if token not in string.punctuation]
+
+def LemNormalize(text):
+    return LemTokens(nltk.word_tokenize(text.lower()))
+
+# Greeting inputs and responses
+greet_inputs = ("hello", "hi", "greetings", "sup", "what's up", "hey")
+greet_responses = ["hi", "hey", "hello there!", "I'm glad you're here.", "Hi! Ask me anything."]
+
+def greeting(sentence):
+    for word in sentence.split():
+        if word.lower() in greet_inputs:
+            return random.choice(greet_responses)
+
+# Generate chatbot response
+def chatbot_response(user_input):
+    user_input = user_input.lower()
+    sent_tokens.append(user_input)
+
+    tfidf_vectorizer = TfidfVectorizer(tokenizer=LemNormalize, stop_words='english')
+    tfidf = tfidf_vectorizer.fit_transform(sent_tokens)
+    val = cosine_similarity(tfidf[-1], tfidf)
+    idx = val.argsort()[0][-2]
+    flat = val.flatten()
+    flat.sort()
+    score = flat[-2]
+
+    sent_tokens.pop()
+
+    if score == 0:
+        return "Sorry, I don't understand that."
+    else:
+        return sent_tokens[idx]
+
+# Chat loop
+print("Bot: Hello! Type 'bye' to exit.")
+
+while True:
+    user_input = input("You: ")
+    if user_input.lower() == 'bye':
+        print("Bot: Goodbye! Take care.")
+        break
+    elif greeting(user_input) is not None:
+        print("Bot:", greeting(user_input))
+    else:
+        print("Bot:", chatbot_response(user_input))
